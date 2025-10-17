@@ -13,7 +13,10 @@ const app = express();
 // Prevent 304 Not Modified by disabling ETag and forcing no-store
 app.set("etag", false);
 app.disable("x-powered-by");
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+
+}));
 app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
@@ -32,8 +35,8 @@ app.use("/api/in", productInRouter);
 app.use("/api/out", productOutRouter);
 app.use("/api/reports", reportsRouter);
 
-const port = process.env.PORT || 5000;
-const host = process.env.HOST || "127.0.0.1";
-app.listen(port, host, () => console.log(`API running on http://${host}:${port}`));
+
+
+app.listen(10000, () => console.log(`API running`));
 
 
