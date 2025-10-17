@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --glass: 12px; }
+body { @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100; }
+.overscroll-fix, html, body, #root { overflow-x: hidden; }
+.card { @apply bg-white/10 backdrop-blur-md shadow-xl rounded-xl border border-white/10; }
+.btn { @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium transition ease-in-out duration-200; }
+.btn-primary { @apply bg-indigo-500 hover:bg-indigo-600 text-white shadow-indigo-500/30; }
+
+/* Tables: small-screen borders and compact sizing */
+.table-sm-borders { @apply border-collapse; }
+.table-sm-borders th, .table-sm-borders td { @apply border border-white/10; }
+.table-xs th, .table-xs td { @apply px-2 py-1; }
+.wrap-cells th, .wrap-cells td { @apply whitespace-normal break-words; }
+
+@screen sm {
+  .table-sm-borders { @apply border-0; }
+  .table-sm-borders th, .table-sm-borders td { @apply border-0; }
+}
+
+
