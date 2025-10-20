@@ -9,7 +9,10 @@ export default function ProductOut(){
 	const [by,setBy]=useState("");
 	const [purpose,setPurpose]=useState("");
 	const [edit,setEdit]=useState(null);
-    const [search, setSearch] = useState("");
+	const [search, setSearch] = useState("");
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [itemsPerPage] = useState(10);
 
 	// Use data hooks with auto-refresh
 	const { data: products, loading: productsLoading } = useData("/api/products", { autoRefresh: true });
@@ -19,20 +22,22 @@ export default function ProductOut(){
 	const addOutMutation = useMutation("/api/out", {
 		onSuccess: () => {
 			setShow(false); setPid(""); setQ(0); setBy(""); setPurpose("");
-			refreshOuts(); // Refresh the outs list
+			refreshOuts();
+			setCurrentPage(1); // Reset to first page
 		}
 	});
 	
 	const updateOutMutation = useMutation("/api/out", {
 		onSuccess: () => {
 			setEdit(null);
-			refreshOuts(); // Refresh the outs list
+			refreshOuts();
 		}
 	});
 	
 	const deleteOutMutation = useMutation("/api/out", {
 		onSuccess: () => {
-			refreshOuts(); // Refresh the outs list
+			refreshOuts();
+			setCurrentPage(1); // Reset to first page
 		}
 	});
 
@@ -45,7 +50,7 @@ export default function ProductOut(){
 		try{
             const payload = { product_id: Number(pid), quantity_out: qty, issued_by: seller };
             const comment = (purpose||"").trim();
-            if (comment) payload.purpose = comment; // omit when empty (backend expects string, not null)
+            if (comment) payload.purpose = comment;
             await addOutMutation.mutate(payload);
 		}catch(err){ alert(err?.message||"Failed"); }
 	}
@@ -57,20 +62,38 @@ export default function ProductOut(){
 		try{
             const payload = { quantity_out: Number(edit.quantity_out)||0, issued_by: (edit.issued_by||"").trim() };
             const c = (edit.purpose||"").trim();
-            if (c) payload.purpose = c; // omit when empty
+            if (c) payload.purpose = c;
             await api(`/api/out/${edit.out_id}`, { method:"PUT", body: JSON.stringify(payload) });
 			setEdit(null);
-			refreshOuts(); // Refresh the outs list
+			refreshOuts();
 		}catch(err){ alert(err?.message||"Failed"); }
 	}
+	
 	async function remove(id){
 		if(!confirm("Delete this record?")) return;
 		try{ 
 			await api(`/api/out/${id}`, { method:"DELETE" }); 
-			refreshOuts(); // Refresh the outs list
+			refreshOuts();
 		}
 		catch(err){ alert(err?.message||"Failed"); }
 	}
+
+	// Filter data
+	const filteredOuts = (outs || []).filter(o => {
+		const q = search.toLowerCase();
+		if (!q) return true;
+		return (
+			(o.product_name||"").toLowerCase().includes(q) ||
+			(o.issued_by||"").toLowerCase().includes(q) ||
+			(o.purpose||"").toLowerCase().includes(q)
+		);
+	});
+
+	// Pagination logic
+	const totalItems = filteredOuts.length;
+	const totalPages = Math.ceil(totalItems / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const currentItems = filteredOuts.slice(startIndex, startIndex + itemsPerPage);
 
 	// Show loading state
 	if (outsLoading) {
@@ -88,39 +111,128 @@ export default function ProductOut(){
 				<button onClick={()=>setShow(true)} className="btn btn-primary">Add Out</button>
 			</div>
 
-			<div className="overflow-auto mt-2">
-				<table className="w-full text-xs sm:text-sm border border-white/20 rounded-lg sm:border-0 sm:rounded-none table-sm-borders table-xs wrap-cells table-fixed sm:table-auto">
-					<thead className="opacity-70"><tr><th className="text-left py-2">Product Name</th><th className="text-left">Quantity Out</th><th className="text-left">Date Out</th><th className="text-left">Issued By</th><th className="text-left">Comment</th><th className="text-left">Actions</th></tr></thead>
-					<tbody>
-						{outs?.length===0 ? (
-							<tr><td className="py-4 opacity-70" colSpan={6}>No product out records.</td></tr>
-						) : (outs || []).filter(o => {
-						const q = search.toLowerCase();
-						if (!q) return true;
-						return (
-							(o.product_name||"").toLowerCase().includes(q) ||
-							(o.issued_by||"").toLowerCase().includes(q) ||
-							(o.purpose||"").toLowerCase().includes(q)
-						);
-					}).map(o => (
-						<tr key={o.out_id} className="border-t border-white/10">
-								<td className="py-2">{o.product_name}</td>
-								<td>{o.quantity_out}</td>
-								<td>{new Date(o.date_out).toLocaleString()}</td>
-								<td>{o.issued_by||"-"}</td>
-								<td className="sm:max-w-[260px]" title={o.purpose||"-"}>{o.purpose||"-"}</td>
-								<td className="grid grid-cols-1 gap-3 sm:flex sm:space-x-2 whitespace-normal sm:whitespace-nowrap">
-									<button onClick={()=>openEdit(o)} className="btn bg-green-700 hover:bg-green-800 text-white w-full sm:w-auto">Edit</button>
-									<button onClick={()=>remove(o.out_id)} className="btn bg-red-700 hover:bg-red-800 text-white w-full sm:w-auto">Delete</button>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
+			{/* Results info */}
+			<div className="text-sm opacity-70">
+				Showing {totalItems > 0 ? `${startIndex + 1}-${Math.min(startIndex + itemsPerPage, totalItems)} of ${totalItems}` : '0'} results
 			</div>
 
+			{/* Responsive Container - Table on md+, Cards below md */}
+			<div className="overflow-hidden">
+				{/* Desktop Table (md and up) */}
+				<div className="hidden lg:block overflow-auto">
+					<table className="w-full text-sm border border-white/20 rounded-lg table-sm-borders table-xs wrap-cells table-fixed">
+						<thead className="opacity-70">
+							<tr>
+								<th className="text-left py-2">Product Name</th>
+								<th className="text-left">Quantity Out</th>
+								<th className="text-left">Date Out</th>
+								<th className="text-left">Issued By</th>
+								<th className="text-left">Comment</th>
+								<th className="text-left">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{currentItems.length === 0 ? (
+								<tr><td className="py-4 opacity-70" colSpan={6}>No product out records found.</td></tr>
+							) : (
+								currentItems.map(o => (
+									<tr key={o.out_id} className="border-t border-white/10">
+										<td className="py-2">{o.product_name}</td>
+										<td>{o.quantity_out}</td>
+										<td>{new Date(o.date_out).toLocaleString()}</td>
+										<td>{o.issued_by||"-"}</td>
+										<td className="max-w-[200px]" title={o.purpose||"-"}>{o.purpose||"-"}</td>
+										<td className="flex space-x-2 whitespace-nowrap">
+											<button onClick={()=>openEdit(o)} className="btn bg-green-700 hover:bg-green-800 text-white px-2 py-1 text-xs">Edit</button>
+											<button onClick={()=>remove(o.out_id)} className="btn bg-red-700 hover:bg-red-800 text-white px-2 py-1 text-xs">Delete</button>
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+
+				{/* Mobile Cards (below md) */}
+				<div className="lg:hidden space-y-3">
+					{currentItems.length === 0 ? (
+						<div className="text-center py-8 opacity-70">No product out records found.</div>
+					) : (
+						currentItems.map(o => (
+							<div key={o.out_id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+								<div className="grid grid-cols-1 gap-2 text-sm">
+									<div className="flex justify-between">
+										<span className="opacity-70">Product:</span>
+										<span className="font-medium">{o.product_name}</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="opacity-70">Qty:</span>
+										<span className="font-semibold">{o.quantity_out}</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="opacity-70">Issued By:</span>
+										<span>{o.issued_by || "-"}</span>
+									</div>
+									<div className="flex justify-between">
+										<span className="opacity-70">Date:</span>
+										<span className="text-xs">{new Date(o.date_out).toLocaleDateString()}</span>
+									</div>
+									{(o.purpose && o.purpose.trim()) && (
+										<div className="pt-2">
+											<span className="opacity-70 block text-xs mb-1">Comment:</span>
+											<p className="text-xs bg-white/5 px-2 py-1 rounded">{o.purpose}</p>
+										</div>
+									)}
+									<div className="flex gap-2 pt-2">
+										<button onClick={()=>openEdit(o)} className="btn bg-green-700 hover:bg-green-800 text-white flex-1 text-xs py-1.5">Edit</button>
+										<button onClick={()=>remove(o.out_id)} className="btn bg-red-700 hover:bg-red-800 text-white flex-1 text-xs py-1.5">Delete</button>
+									</div>
+								</div>
+							</div>
+						))
+					)}
+				</div>
+			</div>
+
+			{/* Pagination */}
+			{totalPages > 1 && (
+				<div className="flex items-center justify-center gap-2 pt-4">
+					<button
+						onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+						disabled={currentPage === 1}
+						className="btn px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						‹ Previous
+					</button>
+					
+					<div className="flex gap-1">
+						{Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+							<button
+								key={page}
+								onClick={() => setCurrentPage(page)}
+								className={`btn px-3 py-1 text-sm ${
+									currentPage === page
+										? 'bg-blue-600 text-white'
+										: 'bg-white/10 hover:bg-white/20'
+								}`}
+							>
+								{page}
+							</button>
+						))}
+					</div>
+					
+					<button
+						onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+						disabled={currentPage === totalPages}
+						className="btn px-3 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+					>
+						Next ›
+					</button>
+				</div>
+			)}
+
 			{show && (
-				<div className="fixed w-screen h-screen top-0 left-0 bg-black/90 flex items-center justify-center p-4 z-50">
+				<div className="fixed w-screen h-screen -top-4 left-0 backdrop-blur-md bg-black/50 flex items-center justify-center p-4 z-50">
 					<div className="w-full max-w-lg p-6 rounded-xl border border-white/10 shadow-2xl bg-slate-800">
 						<div className="text-lg font-semibold mb-4">Sell Product</div>
 						<form onSubmit={submit} className="space-y-3">
@@ -129,7 +241,7 @@ export default function ProductOut(){
 									<label className="block text-xs opacity-70 mb-1">Product</label>
 									<select className="w-full px-3 py-2 rounded-lg bg-white text-black" value={pid} onChange={e=>setPid(e.target.value)}>
 										<option value="">Select product</option>
-										{products.map(p=> <option key={p.product_id} value={p.product_id}>{p.product_name}</option>)}
+										{products?.map(p=> <option key={p.product_id} value={p.product_id}>{p.product_name}</option>)}
 									</select>
 								</div>
 								<div>
@@ -157,7 +269,7 @@ export default function ProductOut(){
 			)}
 
 			{edit && (
-				<div className="fixed w-screen h-screen top-0 left-0 bg-black/90 flex items-center justify-center p-4 z-50">
+				<div className="fixed w-screen h-screen -top-4 left-0 backdrop-blur-md bg-black/50 flex items-center justify-center p-4 z-50">
 					<div className="w-full max-w-lg p-6 rounded-xl border border-white/10 shadow-2xl bg-slate-800">
 						<div className="text-lg font-semibold mb-4">Edit Out Record</div>
 						<form onSubmit={saveEdit} className="space-y-3">
@@ -177,7 +289,9 @@ export default function ProductOut(){
 							</div>
 							<div className="flex gap-2 justify-end pt-2">
 								<button type="button" onClick={()=>setEdit(null)} className="btn">Cancel</button>
-								<button className="btn btn-primary">Save</button>
+								<button disabled={updateOutMutation.loading} className="btn btn-primary">
+									{updateOutMutation.loading ? "Saving..." : "Save"}
+								</button>
 							</div>
 						</form>
 					</div>
@@ -186,5 +300,3 @@ export default function ProductOut(){
 		</div>
 	);
 }
-
-
