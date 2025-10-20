@@ -76,25 +76,29 @@ export const dailySummary = async (req, res) => {
     const date = (req.query.date || "").toString();
     if (!date) return res.status(400).json({ error: "date is required (YYYY-MM-DD)" });
 
-    const [[{ total_products_in }]] = await ProductIn.findAll({
+    const resultIn = await ProductIn.findOne({
       attributes: [[fn("IFNULL", fn("SUM", col("QuantityIn")), 0), "total_products_in"]],
       where: sequelize.where(fn("DATE", col("DateIn")), date),
       raw: true,
     });
+    const total_products_in = resultIn?.total_products_in || 0;
 
-    const [[{ total_products_out }]] = await ProductOut.findAll({
+    const resultOut = await ProductOut.findOne({
       attributes: [[fn("IFNULL", fn("SUM", col("quantity_out")), 0), "total_products_out"]],
       where: sequelize.where(fn("DATE", col("date_out")), date),
       raw: true,
     });
+    const total_products_out = resultOut?.total_products_out || 0;
 
     const movements = await sequelize.query(
-      `SELECT 'IN' as type, p.product_name, i.QuantityIn as quantity, i.DateIn as at FROM product_in i
-       JOIN products p ON p.product_id=i.ProductID
+      `SELECT 'IN' as type, p.product_name, i.QuantityIn as quantity, i.DateIn as at 
+         FROM product_in i
+         JOIN products p ON p.product_id=i.ProductID
        WHERE DATE(i.DateIn)=?
        UNION ALL
-       SELECT 'OUT' as type, p.product_name, o.quantity_out as quantity, o.date_out as at FROM product_out o
-       JOIN products p ON p.product_id=o.product_id
+       SELECT 'OUT' as type, p.product_name, o.quantity_out as quantity, o.date_out as at 
+         FROM product_out o
+         JOIN products p ON p.product_id=o.product_id
        WHERE DATE(o.date_out)=?
        ORDER BY at ASC`,
       { replacements: [date, date], type: QueryTypes.SELECT }
