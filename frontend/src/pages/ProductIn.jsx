@@ -146,7 +146,7 @@ export default function ProductIn(){
 
 			{/* Add Product In Modal */}
 			{show && (
-				<div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+				<div className="fixed w-screen h-screen top-0 left-0 bg-black/90 flex items-center justify-center p-4 z-50">
 					<div className="w-full max-w-lg p-6 rounded-xl border border-white/10 shadow-2xl bg-slate-800">
 						<div className="text-lg font-semibold mb-4">Add Product In</div>
 						<form onSubmit={submit} className="space-y-3">
@@ -188,7 +188,7 @@ export default function ProductIn(){
 
 			{/* Edit Product In Modal */}
 			{edit && (
-				<div className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+				<div className="fixed w-screen h-screen top-0 left-0 bg-black/90 flex items-center justify-center p-4 z-50">
 					<div className="w-full max-w-lg p-6 rounded-xl border border-white/10 shadow-2xl bg-slate-800">
 						<div className="text-lg font-semibold mb-4">Edit Product In</div>
 						<form onSubmit={saveEdit} className="space-y-3">
