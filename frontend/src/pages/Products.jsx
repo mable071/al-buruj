@@ -145,7 +145,7 @@ export default function Products(){
 							<td className="sm:max-w-[260px]" title={x.description||"-"}>{x.description||"-"}</td>
 							<td>{x.quantity}</td>
 							<td>{new Date(x.date_added).toLocaleString()}</td>
-							<td className="grid grid-cols-1 gap-2 sm:flex sm:space-x-2 whitespace-normal sm:whitespace-nowrap">
+							<td className="grid grid-cols-1 gap-3 sm:flex sm:space-x-2 whitespace-normal sm:whitespace-nowrap">
 								<button onClick={()=>openEdit(x)} className="btn bg-green-700 hover:bg-green-800 text-white w-full sm:w-auto">Edit</button>
 								<button onClick={()=>remove(x.product_id)} className="btn bg-red-700 hover:bg-red-800 text-white w-full sm:w-auto">Delete</button>
 							</td>

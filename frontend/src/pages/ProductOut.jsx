@@ -109,7 +109,7 @@ export default function ProductOut(){
 								<td>{new Date(o.date_out).toLocaleString()}</td>
 								<td>{o.issued_by||"-"}</td>
 								<td className="sm:max-w-[260px]" title={o.purpose||"-"}>{o.purpose||"-"}</td>
-								<td className="grid grid-cols-1 gap-2 sm:flex sm:space-x-2 whitespace-normal sm:whitespace-nowrap">
+								<td className="grid grid-cols-1 gap-3 sm:flex sm:space-x-2 whitespace-normal sm:whitespace-nowrap">
 									<button onClick={()=>openEdit(o)} className="btn bg-green-700 hover:bg-green-800 text-white w-full sm:w-auto">Edit</button>
 									<button onClick={()=>remove(o.out_id)} className="btn bg-red-700 hover:bg-red-800 text-white w-full sm:w-auto">Delete</button>
 								</td>
