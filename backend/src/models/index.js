@@ -9,8 +9,15 @@ const sequelize = new Sequelize(
     dialect: "mysql",
     logging: false,
     define: { timestamps: false },
+      port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
+    dialectOptions: {
+      connectTimeout: 10000, // 10 seconds
+    },
   }
 );
+
+console.log( process.env.DB_NAME,process.env.DB_USER,process.env.DB_PASSWORD,process.env.DB_HOST,process.env.DB_PORT);
+
 
 // Models
 import ProductModel from "./product.js";
